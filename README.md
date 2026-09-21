@@ -66,6 +66,6 @@ FusionRare/
 
 ---
 
-## 💡 Replication Notice
+## 💡 Notice
 
-This repository contains the official implementation framework of **FusionRare** to demonstrate the architectural design and multi-paradigm fusion methodology. Users can conceptualize the system flow from this codebase. To comply with institutional intellectual property restrictions and data privacy regulations, the full system performance can be reproduced through the official online portal.
+This repository contains the official implementation framework of FusionRare to demonstrate the architectural design and multi-paradigm fusion methodology. The full system performance can be reproduced through the official online portal.
