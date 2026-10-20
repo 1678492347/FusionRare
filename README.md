@@ -137,9 +137,3 @@ The interactive web application for clinical demonstration is accessible at:
 
 * **Benchmark Challenge Profiles**: 300 de-identified challenge evaluation profiles and their benchmark performance data are archived on [Zenodo (Record: 20697776)](https://zenodo.org/records/20697776).
 
----
-
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
-```
