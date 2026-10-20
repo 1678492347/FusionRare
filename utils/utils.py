@@ -1,7 +1,5 @@
 import json
 import os
-from collections import defaultdict
-import pandas as pd
 from tqdm import tqdm
 
 import config
@@ -81,28 +79,43 @@ def get_data_path(filename):
     return os.path.join(base_dir, "data", filename)
 
 
-def parse_pheno_quality(patients, annotated_freq, hpo_graph):
-    # Simplified patient phenotype quality analysis for demonstration.
+def parse_pheno_quality(patients, annotated_freq, propagated_freq, hpo_graph, all_phenotypical_abnormality):
     total_count_list = []
     anno_count_list = []
+    rela_count_list = []
+    desc_count_list = []
     noise_count_list = []
     dise_anno_count_list = []
     for record in tqdm(patients, 'Parsing Patient HPO Quality'):
         try:
             target = record['diagnosis']
             phe = record['term_id']
+            phe = [i for i in phe if i in all_phenotypical_abnormality]
             target_anno_phe = set(annotated_freq.get(target).keys())
+            target_related_phe = set(propagated_freq.get(target).keys())
+            target_desc_phe = set([j for i in target_anno_phe for j in list(hpo_graph.predecessors(i))])
+
             anno_count = 0
+            rela_count = 0
+            desc_count = 0
             noise_count = 0
+
             for p in phe:
                 if p in target_anno_phe:
                     anno_count += 1
+                elif p in target_related_phe:
+                    rela_count += 1
+                elif p in target_desc_phe:
+                    desc_count += 1
                 else:
                     noise_count += 1
             total_count_list.append(len(phe))
             anno_count_list.append(anno_count)
+            rela_count_list.append(rela_count)
+            desc_count_list.append(desc_count)
             noise_count_list.append(noise_count)
             dise_anno_count_list.append(len(target_anno_phe))
         except Exception:
             continue
-    return [total_count_list, dise_anno_count_list, anno_count_list, noise_count_list]
+    return [total_count_list, dise_anno_count_list, anno_count_list, rela_count_list, desc_count_list, noise_count_list]
+

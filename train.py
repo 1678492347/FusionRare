@@ -1,5 +1,6 @@
 import gc
 
+import networkx
 import numpy as np
 import obonet
 import torch
@@ -139,8 +140,8 @@ if __name__ == '__main__':
     """analyze case quality"""
     phenotype_quality = np.column_stack(parse_pheno_quality(
         RPB_sample,
-        dise_hpo_freq,
-        hpo_graph))
+        dise_hpo_freq, propagated_freq,
+        hpo_graph, list(networkx.ancestors(hpo_graph, "HP:0000118"))))
     kde_model = KernelDensity(kernel='gaussian')
     kde_model.fit(phenotype_quality[:, 2:])
 

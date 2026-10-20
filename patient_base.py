@@ -1,6 +1,5 @@
 import torch
 import numpy as np
-from collections import defaultdict
 
 
 class PatientLibrary:
@@ -27,6 +26,7 @@ class PatientLibrary:
         num_p = len(patients)
         hpo_mtx = torch.zeros((num_p, self.model.num_hpo), device=self.device)
         diagnoses = []
+
         for i, p in enumerate(patients):
             indices = [self.model.hpo_to_idx[h] for h in p['term_id'] if h in self.model.hpo_to_idx]
             hpo_mtx[i, indices] = 1.0
@@ -35,35 +35,72 @@ class PatientLibrary:
         anc_mtx = self.model.propagate_vector(hpo_mtx)
         return hpo_mtx, anc_mtx, np.array(diagnoses)
 
-    def batch_query_pro(self, query_vecs, top_k=10):
-        q_anc_vecs = self.model.propagate_vector(query_vecs)
-        weighted_patient_anc = self.patient_anc_mtx * self.ic_vector
+    def batch_query_pro(self, query_vecs, top_k=10, get_patient_info=False):
+        q_anc_vecs = self.model.propagate_vector(query_vecs)  # [Batch, Num_HPO]
+
+        weighted_patient_anc = self.patient_anc_mtx * self.ic_vector  # [Lib, Num_HPO]
         sim_q_hk = torch.matmul(query_vecs, weighted_patient_anc.T)
 
-        weighted_q_anc = q_anc_vecs * self.ic_vector
+        weighted_q_anc = q_anc_vecs * self.ic_vector  # [Batch, Num_HPO]
         sim_hk_q = torch.matmul(weighted_q_anc, self.patient_hpo_mtx.T)
 
         score_matrix = 0.5 * (sim_q_hk + sim_hk_q)
-        score_matrix_cpu = score_matrix.cpu().numpy()
+
+        batch_size = score_matrix.size(0)
+        disease_scores = torch.full(
+            (batch_size, self.num_diseases_in_lib),
+            -1e9,
+            device=self.device
+        )
+
+        disease_indices_expanded = self.patient_to_dise_idx.expand(batch_size, -1)
+        disease_scores.scatter_reduce_(
+            dim=1,
+            index=disease_indices_expanded,
+            src=score_matrix,
+            reduce='amax',
+            include_self=False
+        )
+        pat_to_dis_cpu = self.patient_to_dise_idx.cpu()
+        is_best_patient_cpu = None
+        if get_patient_info:
+            max_scores_per_patient_pos = disease_scores.gather(1, disease_indices_expanded)
+            is_best_patient_cpu = (score_matrix == max_scores_per_patient_pos).cpu()
+
+        top_scores, top_indices = torch.topk(disease_scores, k=top_k, dim=1)
+
+        top_scores_cpu = top_scores.cpu().numpy()
+        top_indices_cpu = top_indices.cpu().numpy()
 
         batch_results = []
-        for i in range(score_matrix.size(0)):
-            row_scores = score_matrix_cpu[i]
-            disease_best_scores = defaultdict(float)
-
-            for score, disease in zip(row_scores, self.diagnoses):
-                if score > disease_best_scores[disease]:
-                    disease_best_scores[disease] = score
-
-            sorted_ranking = sorted(disease_best_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-
-            results = []
-            for d_name, score in sorted_ranking:
-                item = {
-                    "disease": d_name,
-                    "score": float(score)
-                }
-                results.append(item)
-            batch_results.append(results)
-
+        for i in range(batch_size):
+            if not get_patient_info:
+                results = [
+                    {'disease': self.idx_to_dise[idx], 'score': float(score)}
+                    for idx, score in zip(top_indices_cpu[i], top_scores_cpu[i])
+                ]
+                batch_results.append(results)
+            else:
+                results = []
+                current_query_best_mask = is_best_patient_cpu[i]
+                for rank in range(top_k):
+                    d_idx = top_indices_cpu[i, rank]
+                    score = top_scores_cpu[i, rank]
+                    best_pat_indices = torch.where(
+                        (pat_to_dis_cpu == d_idx) & current_query_best_mask
+                    )[0].tolist()
+                    best_pat_hpo_indices = [
+                        torch.where(self.patient_hpo_mtx[idx] > 0)[0].tolist()
+                        for idx in best_pat_indices
+                    ]
+                    results.append({
+                        "disease": self.idx_to_dise[d_idx],
+                        "score": float(score),
+                        "best_patient_indices": best_pat_indices,
+                        "best_patient_hpos": [
+                            [self.model.idx_to_hpo[idx] for idx in sublist]
+                            for sublist in best_pat_hpo_indices
+                        ]
+                    })
+                batch_results.append(results)
         return batch_results

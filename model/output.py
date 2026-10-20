@@ -23,6 +23,7 @@ class ResidualNetworkClassifier(nn.Module):
         self.residual_net = nn.Sequential(
             nn.Linear(self.num_hpo, RESIDUAL_HIDDEN_SIZE),
             nn.ReLU(),
+            nn.Dropout(0.5),
             nn.Linear(RESIDUAL_HIDDEN_SIZE, self.num_dise)
         )
         nn.init.zeros_(self.residual_net[-1].weight)

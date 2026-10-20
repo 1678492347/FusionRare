@@ -83,7 +83,7 @@ class DiagDL(nn.Module):
                     hpo_indices = [hpo_idx for hpo_idx, _ in valid_hpos]
                     values = [v for _, v in valid_hpos]
                     lr_matrix[dise_idx, hpo_indices] = torch.tensor(values)
-            return lr_matrix.log()
+            return lr_matrix.log10().clamp(min=-2.0)
 
     def _build_hpo_anc_mtx(self, hpo_graph):
         anc_mtx = np.zeros((self.num_hpo, self.num_hpo), dtype=bool)
@@ -108,7 +108,7 @@ class DiagDL(nn.Module):
                     hpo_sum_freq[idx] += freq
         eps = 1e-8
         probs = (hpo_sum_freq + eps) / (self.num_diseases + eps)
-        ic_scores = -torch.log(probs)
+        ic_scores = -torch.log10(probs)
         return ic_scores
 
 
@@ -141,61 +141,83 @@ class DynamicPatientSimulator:
         self.model = model
         self.kde_model = kde_model
         self.dise_hpo_freq = dise_hpo_freq
-        self.num_hpo = model.num_hpo
+        self.hpo_nav = model.hpo_nav
+        self.num_hpo = model.num_hp
 
-    def generate_epoch_data(self, num_per_disease=10, batch_size=1024):
+    def generate_epoch_data(self, num_per_disease=10, batch_size=1024, **kwargs):
         self.model.eval()
+        device = next(self.model.parameters()).device
         num_diseases = self.model.num_diseases
         total_patients = num_diseases * num_per_disease
 
         dist_samples = self.kde_model.sample(total_patients)
         dist_samples = np.round(dist_samples).astype(int)
         dist_samples = np.clip(dist_samples, 0, None)
+        non_noise_totals = dist_samples[:, :3].sum(axis=1)
+        dist_samples = dist_samples[(non_noise_totals >= 2)]
 
         base_vecs = []
         labels = []
-
         sample_idx = 0
-        for dise_id, dise_idx in tqdm(self.model.dise_to_idx.items(), 'Generating Simulated Patients (Simplified)'):
+
+        for dise_id, dise_idx in tqdm(self.model.dise_to_idx.items(), 'Generating Simulated Patients'):
             anno_hpos = list(self.dise_hpo_freq.get(dise_id, {}).keys())
             if not anno_hpos:
                 continue
 
+            spec_indices = self.model.dise_idx_to_spec_idx[dise_idx]
+            spec_idx = random.choice(spec_indices) if len(spec_indices) > 0 else random.choice(
+                range(self.model.num_spec))
+            bg_probs = self.model.spec_hpo_background_freq[spec_idx]
+            bg_hpo_num = (bg_probs > 0).sum().item()
+
             for _ in range(num_per_disease):
                 dist = dist_samples[sample_idx % len(dist_samples)]
                 sample_idx += 1
-                n_accurate = max(1, dist[0])
-                n_noise = dist[1] if len(dist) > 1 else 0
-                selected_hpos = random.sample(anno_hpos, min(n_accurate, len(anno_hpos)))
-                if n_noise > 0:
-                    noise_hpos = random.sample(self.model.hpo_ids, min(n_noise, len(self.model.hpo_ids)))
-                    selected_hpos.extend(noise_hpos)
-                vec = torch.zeros(self.num_hpo)
-                indices = [self.model.hpo_to_idx[h] for h in selected_hpos if h in self.model.hpo_to_idx]
+                n_pre, n_anc, n_desc, n_noise = dist[0], dist[1], dist[2], dist[3]
+
+                p_hpos = random.sample(anno_hpos, min(n_pre, len(anno_hpos)))
+                anc_targets = random.sample(anno_hpos, min(n_anc, len(anno_hpos)))
+                for tar in anc_targets:
+                    p_id = self.hpo_nav.get_random_parent(tar)
+                    if p_id:
+                        p_hpos.append(p_id)
+
+                desc_targets = random.sample(anno_hpos, min(n_desc, len(anno_hpos)))
+                for tar in desc_targets:
+                    c_id = self.hpo_nav.get_random_child(tar)
+                    if c_id:
+                        p_hpos.append(c_id)
+
+                if min(n_noise, bg_hpo_num) > 0:
+                    noise_indices = torch.multinomial(bg_probs, min(n_noise, bg_hpo_num), replacement=False)
+                    p_hpos += [self.hpo_nav.idx_to_hpo[idx.item()] for idx in noise_indices]
+
+                vec = torch.zeros(self.model.num_hpo)
+                indices = [self.model.hpo_to_idx[h] for h in p_hpos if h in self.model.hpo_to_idx]
                 vec[indices] = 1.0
+
                 base_vecs.append(vec)
                 labels.append(dise_idx)
 
-        base_labels = torch.tensor(labels)
         total_patients = len(base_vecs)
+        base_labels = torch.tensor(labels)
 
         final_base_vecs = []
         final_anc_vecs = []
         final_soft_labels = []
 
         with torch.no_grad():
-            for i in tqdm(range(0, total_patients, batch_size), 'Propagating and Formatting'):
+            for i in tqdm(range(0, total_patients, batch_size), 'Propagate'):
                 b_bases = torch.stack(base_vecs[i:i + batch_size]).to(device)
                 b_base_anc = self.model.propagate_vector(b_bases)
 
                 y_soft = torch.zeros(b_bases.size(0), num_diseases, device=device)
-                batch_labels = base_labels[i:i + batch_size].to(device)
-                y_soft.scatter_(1, batch_labels.unsqueeze(1), 1.0)
+                y_soft.scatter_(1, base_labels[i:i + batch_size].unsqueeze(1).to(device), 1.0)
 
                 final_base_vecs.append(b_bases.to_sparse().cpu())
                 final_anc_vecs.append(b_base_anc.to_sparse().cpu())
                 final_soft_labels.append(y_soft.cpu())
-
                 del b_bases, b_base_anc, y_soft
 
         del base_vecs

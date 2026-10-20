@@ -47,25 +47,99 @@ FusionRare/
 │   └── utils.py                 # JSON I/O, grouping/merging, HPO vocab utilities
 │
 └── data/                        # Ontology mappings, sample cases, and reference data
+    ├── checkpoint/              # Trained RNC model weights
+    ├── dise_synonyms.json       # Synonyms for rare diseases
     ├── hpo_ids.txt              # HPO term identifiers
     └── RPB_sample.json          # Sample patient-bank records
 ```
 
 ---
 
-## 🌐 Access
+## 🚀 Step-by-Step Setup & Data Preparation
 
-* **Web Platform**: The extended web application developed for this research is hosted at [http://rdx.nbscn.org/](http://rdx.nbscn.org/).
+### 1. Download Ontology & Pretrained Assets
+
+Download the specific HPO release files and place them into the `data/` directory:
+* **HPO Ontology (`hp.obo`)**: [Download v2023-01-27](https://github.com/obophenotype/human-phenotype-ontology/releases/download/v2023-01-27/hp.obo)
+* **Phenotype Annotations (`phenotype.hpoa`)**: [Download v2023-01-27](https://github.com/obophenotype/human-phenotype-ontology/releases/download/v2023-01-27/phenotype.hpoa)
+
+Download the model weights and core annotation databases from the official [Hugging Face Repository](https://huggingface.co/yj1678492347/FusionRare):
+* **`integrated_anno.json`**: Disease-phenotype annotation frequency database (save to `data/`).
+* **`rnc.pth`**: Pretrained RNC model weights (save to `data/checkpoint/`).
+* **`23559858-Ajmal-2013-BBS1-IV-5_family_A.json`** *(Optional)*: Example VCF-parsed case for genomic/phenotypic joint analysis.
 
 ---
 
-## 📂 Data Availability
+### 2. Knowledge Base Preprocessing
 
-* **Ontologies & Knowledge Bases**: The Human Phenotype Ontology (HPO), Orphanet (ORPHA), and the Mondo Disease Ontology are publicly available for download from their official portals.
-* **Benchmark Datasets**: 300 de-identified case profiles from the challenge subset, along with their benchmark performance data, are publicly available on Zenodo at [https://zenodo.org/records/20697776](https://zenodo.org/records/20697776).
+Run the offline preprocessing scripts to calculate prior likelihood ratios and build the semantic vector index for disease names:
+
+```bash
+# 1. Compute propagated frequencies and Likelihood Ratio (LR) prior matrices
+python preprocess/calc_lr.py
+
+# 2. Build the disease-name BioLORD embedding vector database
+python disease_retriever/vectorization.py
+```
 
 ---
 
-## 💡 Notice
+### 3. Patient Bank Construction (PBR)
 
-This repository contains the official implementation framework of FusionRare to demonstrate the architectural design and multi-paradigm fusion methodology. The full system performance can be reproduced through the official online portal.
+The Patient Bank Retriever (PBR) leverages real-world historical clinical cases. Researchers can collect public rare disease cases from the authoritative sources listed below:
+
+| Source Dataset | Access URL / Identifier | Reference / Notes |
+| :--- | :--- | :--- |
+| **RareArena** | [https://github.com/zhao-zy15/RareArena](https://github.com/zhao-zy15/RareArena) | Benchmark clinical cohort |
+| **Phenopacket** | [https://github.com/monarch-initiative/phenopacket-store](https://github.com/monarch-initiative/phenopacket-store) | GA4GH standard patient store |
+| **LIRICAL** | [https://zenodo.org/record/3905420](https://zenodo.org/record/3905420) | Phenotype-driven benchmark |
+| **RDmaster** | [https://github.com/1678492347/rdmaster-test](https://github.com/1678492347/rdmaster-test) | Diagnostic evaluation set |
+| **PhenoDP** | [10.1186/s13073-025-01496-8#Sec37](https://link.springer.com/article/10.1186/s13073-025-01496-8#Sec37) | Phenotype benchmark |
+| **MME** | [https://github.com/ga4gh/mme-apis/tree/master/testing](https://github.com/ga4gh/mme-apis/tree/master/testing) | Matchmaker Exchange API suite |
+| **VPI** | [https://www.nature.com/articles/ejhg2017123#Sec9](https://www.nature.com/articles/ejhg2017123#Sec9) | Variant-phenotype cohort |
+| **ADX** | [10.1186/s13023-019-1040-6#Sec37](https://link.springer.com/article/10.1186/s13023-019-1040-6#Sec37) | Diagnostic validation data |
+| **DECIPHER** | [https://www.deciphergenomics.org/](https://www.deciphergenomics.org/) | Microdeletion / CNV cohort |
+| **RAMEDIS** | [http://www.ramedis.de](http://www.ramedis.de) *(Backup: [Zenodo 10774650](https://zenodo.org/records/10774650))* | Rare disease case registry |
+
+#### Standardized Patient Format
+All retrieved cases should be parsed and organized into a standardized JSON list:
+
+```python
+[
+  {
+    "patient_id": "P0001",
+    "term_id": [
+      "HP:0001250",
+      "HP:0000252",
+      "HP:0001263"
+    ],
+    "diagnosis": [
+      "OMIM:219700", # or ORPHA code
+    ]
+  }
+]
+```
+
+> **📌 Note on Sample Data (`RPB_sample.json`)**:  
+> For immediate pipeline testing, `data/RPB_sample.json` provides **1,000 de-identified sample cases**. This allows you to verify the entire pipeline (`demo.py`) out of the box. However, replicating the **full benchmark diagnostic accuracy** requires constructing the comprehensive patient library using the sources above.
+
+
+---
+
+## 🌐 Web Platform
+
+The interactive web application for clinical demonstration is accessible at:
+👉 **[http://rdx.nbscn.org/](http://rdx.nbscn.org/)**
+
+---
+
+## 📂 Supplementary Documents
+
+* **Benchmark Challenge Profiles**: 300 de-identified challenge evaluation profiles and their benchmark performance data are archived on [Zenodo (Record: 20697776)](https://zenodo.org/records/20697776).
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
+```
