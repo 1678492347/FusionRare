@@ -88,18 +88,18 @@ python disease_retriever/vectorization.py
 
 The Patient Bank Retriever (PBR) leverages real-world historical clinical cases. Researchers can collect public rare disease cases from the authoritative sources listed below:
 
-| Source Dataset | Access URL / Identifier | Reference / Notes |
-| :--- | :--- | :--- |
-| **RareArena** | [https://github.com/zhao-zy15/RareArena](https://github.com/zhao-zy15/RareArena) | Benchmark clinical cohort |
-| **Phenopacket** | [https://github.com/monarch-initiative/phenopacket-store](https://github.com/monarch-initiative/phenopacket-store) | GA4GH standard patient store |
-| **LIRICAL** | [https://zenodo.org/record/3905420](https://zenodo.org/record/3905420) | Phenotype-driven benchmark |
-| **RDmaster** | [https://github.com/1678492347/rdmaster-test](https://github.com/1678492347/rdmaster-test) | Diagnostic evaluation set |
-| **PhenoDP** | [10.1186/s13073-025-01496-8#Sec37](https://link.springer.com/article/10.1186/s13073-025-01496-8#Sec37) | Phenotype benchmark |
-| **MME** | [https://github.com/ga4gh/mme-apis/tree/master/testing](https://github.com/ga4gh/mme-apis/tree/master/testing) | Matchmaker Exchange API suite |
-| **VPI** | [https://www.nature.com/articles/ejhg2017123#Sec9](https://www.nature.com/articles/ejhg2017123#Sec9) | Variant-phenotype cohort |
-| **ADX** | [10.1186/s13023-019-1040-6#Sec37](https://link.springer.com/article/10.1186/s13023-019-1040-6#Sec37) | Diagnostic validation data |
-| **DECIPHER** | [https://www.deciphergenomics.org/](https://www.deciphergenomics.org/) | Microdeletion / CNV cohort |
-| **RAMEDIS** | [http://www.ramedis.de](http://www.ramedis.de) *(Backup: [Zenodo 10774650](https://zenodo.org/records/10774650))* | Rare disease case registry |
+| Source Dataset | Access URL / Identifier |
+| :--- | :--- |
+| **RareArena** | [https://github.com/zhao-zy15/RareArena](https://github.com/zhao-zy15/RareArena)|
+| **Phenopacket** | [https://github.com/monarch-initiative/phenopacket-store](https://github.com/monarch-initiative/phenopacket-store) |
+| **LIRICAL** | [https://zenodo.org/record/3905420](https://zenodo.org/record/3905420) |
+| **RDmaster** | [https://github.com/1678492347/rdmaster-test](https://github.com/1678492347/rdmaster-test) |
+| **PhenoDP** | [10.1186/s13073-025-01496-8#Sec37](https://link.springer.com/article/10.1186/s13073-025-01496-8#Sec37) |
+| **MME** | [https://github.com/ga4gh/mme-apis/tree/master/testing](https://github.com/ga4gh/mme-apis/tree/master/testing) |
+| **VPI** | [https://www.nature.com/articles/ejhg2017123#Sec9](https://www.nature.com/articles/ejhg2017123#Sec9) |
+| **ADX** | [10.1186/s13023-019-1040-6#Sec37](https://link.springer.com/article/10.1186/s13023-019-1040-6#Sec37) |
+| **DECIPHER** | [https://www.deciphergenomics.org/](https://www.deciphergenomics.org/) |
+| **RAMEDIS** | [http://www.ramedis.de](http://www.ramedis.de) *(Backup: [Zenodo 10774650](https://zenodo.org/records/10774650))* |
 
 #### Standardized Patient Format
 All retrieved cases should be parsed and organized into a standardized JSON list:
