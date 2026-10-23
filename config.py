@@ -15,11 +15,11 @@ EMBEDDING_MODEL = "FremyCompany/BioLORD-2023"
 HP_OBO_PATH = "data/hp.obo"                         # hp.obo PATH
 PHENOTYPE_HPOA_PATH = "data/phenotype.hpoa"         # phenotype.hpoa PATH
 DISEASE_NAME_PATH = "data/dise_synonyms.json"       # RD2name PATH
-DISEASE_NAME_EMB_PATH = "data/dise_synonyms_BioLORD_metadata.npy"  # RD embedding PATH  # TODO 自己生成
-ANNOTATION_FILE_PATH = "data/integrated_anno.json"  # RD phenotype annotation PATH      # TODO 下载获取
-PROPAGATED_ANNO_PATH = "data/propagated_freq.json"  # RD propgated phenotype annotation PATH    # TODO 自己生成
-LR_PRIOR_PATH = "data/integrated_lr.json"           # calculated LR PATH                # TODO 自己生成
-RNC_CHECKPOINT = "data/checkpoint/rnc.pth"          # RNC weights                       # TODO 下载获取
+DISEASE_NAME_EMB_PATH = "data/dise_synonyms_BioLORD_metadata.npy"  # RD embedding PATH
+ANNOTATION_FILE_PATH = "data/integrated_anno.json"  # RD phenotype annotation PATH
+PROPAGATED_ANNO_PATH = "data/propagated_freq.json"  # RD propgated phenotype annotation PATH
+LR_PRIOR_PATH = "data/integrated_lr.json"           # calculated LR PATH
+RNC_CHECKPOINT = "data/checkpoint/rnc.pth"          # RNC weights
 RPB_SAMPLE = "data/RPB_sample.json"                 # 1000 RPB samples
 
 """
