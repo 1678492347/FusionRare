@@ -94,7 +94,7 @@ OPENAI_API_KEY = "<api-key>"
 HF_CACHE_FOLDER = ""  # Optional Hugging Face model cache directory
 ```
 
-The LLM settings are required by `llm_diag.py` and `llm_reflection.py`. Do not commit a real API key. The default `RECOMMEND_TOP_N = 5` can be adjusted if needed.
+The LLM settings are required by `llm_diag.py` and `llm_reflection.py`.
 
 ### 3. Download Ontology & Pretrained Assets
 
