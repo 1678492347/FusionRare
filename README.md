@@ -62,7 +62,41 @@ FusionRare/
 
 ## 🚀 Step-by-Step Setup & Data Preparation
 
-### 1. Download Ontology & Pretrained Assets
+### 1. Create the Python environment
+
+The pinned dependencies were recorded with Python **3.9.13**. The commands below assume Windows PowerShell and a working Conda installation:
+
+```powershell
+conda create -n fusionrare python=3.9.13 -y
+conda activate fusionrare
+python --version
+
+python -m pip install --upgrade pip
+python -m pip install torch==2.1.2+cu121 --index-url https://download.pytorch.org/whl/cu121
+python -m pip install -r requirements.txt
+```
+
+`requirements.txt` targets the CUDA 12.1 build of PyTorch. An NVIDIA driver compatible with CUDA 12.1 is required when `device` is set to `cuda`. Verify the installation before continuing:
+
+```powershell
+python -c "import torch; print(torch.__version__); print('CUDA available:', torch.cuda.is_available())"
+```
+
+### 2. Configure the runtime
+
+Open `config.py` and set the values for the local machine. Paths are relative to the repository root:
+
+```python
+device = "cuda"       # Use "cpu" when no CUDA GPU is available
+GPT_MODEL = "<model-name>"
+OPENAI_API_BASE = "https://<api-host>/v1"
+OPENAI_API_KEY = "<api-key>"
+HF_CACHE_FOLDER = ""  # Optional Hugging Face model cache directory
+```
+
+The LLM settings are required by `llm_diag.py` and `llm_reflection.py`. Do not commit a real API key. The default `RECOMMEND_TOP_N = 5` can be adjusted if needed.
+
+### 3. Download Ontology & Pretrained Assets
 
 Download the specific HPO release files and place them into the `data/` directory:
 * **HPO Ontology (`hp.obo`)**: [Download v2023-01-27](https://github.com/obophenotype/human-phenotype-ontology/releases/download/v2023-01-27/hp.obo)
@@ -73,13 +107,24 @@ Download the model weights and core annotation databases from the official [Hugg
 * **`rnc.pth`**: Pretrained RNC model weights (save to `data/checkpoint/`).
 * **`23559858-Ajmal-2013-BBS1-IV-5_family_A.json`** *(Optional)*: Example VCF-parsed case for genomic/phenotypic joint analysis.
 
+Before preprocessing, confirm that these runtime inputs exist:
+
+```text
+data/hp.obo
+data/phenotype.hpoa
+data/dise_synonyms.json
+data/integrated_anno.json
+data/checkpoint/rnc.pth
+data/RPB_sample.json
+```
+
 ---
 
-### 2. Knowledge Base Preprocessing
+### 4. Generate derived knowledge-base files
 
 Run the offline preprocessing scripts to calculate prior likelihood ratios and build the semantic vector index for disease names:
 
-```bash
+```powershell
 # 1. Compute propagated frequencies and Likelihood Ratio (LR) prior matrices
 python preprocess/calc_lr.py
 
@@ -87,9 +132,19 @@ python preprocess/calc_lr.py
 python disease_retriever/vectorization.py
 ```
 
+The resulting derived files should be:
+
+```text
+data/integrated_propagated_freq.json
+data/integrated_lr.json
+data/dise_synonyms_BioLORD_metadata.npy
+```
+
+The vectorization step downloads the `FremyCompany/BioLORD-2023` model on its first run. Make sure the machine can access Hugging Face, or set `HF_CACHE_FOLDER` to an existing model cache.
+
 ---
 
-### 3. Patient Bank Construction (PBR)
+### 5. Patient Bank Construction (PBR)
 
 The Patient Bank Retriever (PBR) leverages real-world historical clinical cases. Researchers can collect public rare disease cases from the authoritative sources listed below:
 
@@ -127,6 +182,17 @@ All retrieved cases should be parsed and organized into a standardized JSON list
 
 > **📌 Note on Sample Data (`RPB_sample.json`)**:  
 > For immediate pipeline testing, `data/RPB_sample.json` provides **1,000 de-identified sample cases**. This allows you to verify the entire pipeline (`demo.py`) out of the box. However, replicating the **full benchmark diagnostic accuracy** requires constructing the comprehensive patient library using the sources above.
+
+### 6. Run the demo
+
+From the repository root, run:
+
+```powershell
+conda activate fusionrare
+python demo.py
+```
+
+The demo loads the RNC checkpoint, the generated FAISS disease index, and the sample patient bank. It also calls the configured LLM endpoint for the zero-shot diagnosis and reflection stages, so valid LLM settings in `config.py` are required for the complete pipeline.
 
 
 ---

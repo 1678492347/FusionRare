@@ -5,17 +5,7 @@ import numpy as np
 import obonet
 from tqdm import tqdm
 
-from config import ANNOTATION_FILE_PATH, LR_PRIOR_PATH
-
-try:
-    from config import HPO_OBO_PATH
-except ImportError:
-    HPO_OBO_PATH = "data/hp.obo"
-
-try:
-    from config import PROPAGATED_FREQ_PATH
-except ImportError:
-    PROPAGATED_FREQ_PATH = None
+from config import ANNOTATION_FILE_PATH, LR_PRIOR_PATH, HP_OBO_PATH, PROPAGATED_FREQ_PATH
 
 
 class DiseaseAnalyzer:
@@ -136,25 +126,7 @@ def calculate_hpo_2_disease_lr_prob(ontology_graph, induced_disease_graph_map, h
     return disease_2_hpo_lr
 
 
-def process_all_diseases(json_path=ANNOTATION_FILE_PATH, obo_path=HPO_OBO_PATH, output_path_1=None, output_path_2=None):
-    if output_path_1 is None:
-        if PROPAGATED_FREQ_PATH is not None:
-            output_path_1 = PROPAGATED_FREQ_PATH
-        elif "_anno.json" in json_path:
-            output_path_1 = json_path.replace("_anno.json", "_propagated_freq.json")
-        else:
-            base, ext = os.path.splitext(json_path)
-            output_path_1 = f"{base}_propagated_freq{ext}"
-
-    if output_path_2 is None:
-        if LR_PRIOR_PATH is not None:
-            output_path_2 = LR_PRIOR_PATH
-        elif "_anno.json" in json_path:
-            output_path_2 = json_path.replace("_anno.json", "_lr.json")
-        else:
-            base, ext = os.path.splitext(json_path)
-            output_path_2 = f"{base}_lr{ext}"
-
+def process_all_diseases(json_path=ANNOTATION_FILE_PATH, obo_path=HP_OBO_PATH, output_path_1=PROPAGATED_FREQ_PATH, output_path_2=LR_PRIOR_PATH):
     hpo_graph = obonet.read_obo(obo_path)
     analyzer = DiseaseAnalyzer(hpo_graph)
 
