@@ -13,7 +13,7 @@ from patient_base import PatientLibrary
 from rra import RobustRankAggreg
 from utils.utils import *
 from config import device, RECOMMEND_TOP_N, ANNOTATION_FILE_PATH, HP_OBO_PATH, RNC_CHECKPOINT, RPB_SAMPLE, \
-    PROPAGATED_ANNO_PATH
+    PROPAGATED_FREQ_PATH
 
 torch.set_default_device(device)
 
@@ -28,7 +28,7 @@ def run_single_case_demo(model, case, disease_vocab_inv, top_k=200):
         logits_primary = model.test(hpo_tensor, mask)
         logits_lr = model.predict_with_lr(hpo_tensor, mask)
         full_query_vec = model.multi_hot_hpos(hpo_tensor, mask)
-        pbr_results = patient_bank.batch_query_pro(full_query_vec, top_k)[0]
+        pbr_results = patient_bank.batch_query_pro(full_query_vec, top_k, get_patient_info=True)[0]
 
     def get_top_k_names(logits, k):
         top_probs, top_indices = torch.topk(logits, k)
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     """
     hpo_graph = obonet.read_obo(HP_OBO_PATH)
     dise_hpo_freq = load_disease_hpo_freq(ANNOTATION_FILE_PATH)
-    propagated_freq = load_disease_hpo_freq(PROPAGATED_ANNO_PATH)
+    propagated_freq = load_disease_hpo_freq(PROPAGATED_FREQ_PATH)
     hpo_id_to_name = {id_: data.get('name') for id_, data in hpo_graph.nodes(data=True)}
     missed_valid_mapping = parse_missed_valid_mapping()
 

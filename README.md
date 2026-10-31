@@ -3,11 +3,6 @@
 [![Web Application](https://img.shields.io/badge/Web_App-Available-blue)](http://rdx.nbscn.org/) 
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-
-> [NOTE]
-> **Project Status Update (October 2026)**:  
-> The core functionalities of FusionRare are now fully available in this repository. The development team is currently conducting final-stage environment configuration and dependency debugging to streamline local deployment and testing for external researchers. An optimized release is scheduled for **October 31, 2026**.
-
 ## 📖 Overview
 
 **FusionRare** is a unified multiparadigm fusion framework designed to prioritize and diagnose rare diseases (RDs). Rare diseases afflict an estimated 300 million people globally, often leaving patients to navigate a protracted "diagnostic odyssey". To address clinical scarcity and fragmented medical knowledge, FusionRare integrates heterogeneous artificial intelligence paradigms under strict anti-leakage protocols. By synthesizing complementary reasoning modalities, the system overcomes the structural limitations inherent in individual AI paradigms, offering a robust, interpretable, and scalable pathway toward shortening the diagnostic trajectory for RDs.
